@@ -654,3 +654,40 @@ procdump(void)
     printf("\n");
   }
 }
+
+struct uproc {
+    int pid;                   // Process ID
+    enum procstate state;      // Process state
+    uint64 size;               // Size of process memory (bytes)
+    int ppid;                  // Parent ID
+    char name[16];             // Process command name
+};
+	
+int
+procinfo(uint64 addr)
+{
+  int count = 0;
+  struct proc *p;
+  struct proc *callingproc = myproc();
+  struct uproc u;
+
+  for(p = proc; p < &proc[NPROC]; p++){
+    if(p->state != UNUSED){
+      u.pid = p->pid;
+      u.state = p->state;
+      u.size = p->sz;
+      if(p->parent){
+        u.ppid = p->parent->pid;
+      }else{
+	u.ppid = 0;
+      }
+      for(int i = 0; i < 16; i++){
+        u.name[i] = p->name[i];
+      }
+      copyout(callingproc->pagetable, addr, (char *)&u, sizeof(struct uproc));
+      count++;
+      addr += sizeof(struct uproc); // size of struct uproc
+    }
+  }
+  return count;
+}
