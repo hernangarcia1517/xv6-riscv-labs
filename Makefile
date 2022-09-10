@@ -134,6 +134,7 @@ UPROGS=\
 	$U/_zombie\
 	$U/_ps\
 	$U/_sleep\
+	$U/_pstree\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
