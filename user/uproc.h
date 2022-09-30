@@ -6,4 +6,5 @@ struct uproc {
 	uint64 size; // size of process memory(bytes)
 	int ppid; // parent id
 	char name[16]; // process command name
+	uint cputime;
 };

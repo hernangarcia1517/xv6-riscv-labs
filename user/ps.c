@@ -23,9 +23,9 @@ main(int argc, char **argv)
   if (nprocs < 0)
     exit(-1);
 
-  printf("pid\tname\tppid\n");
+  printf("pid\tname\tcputime\tppid\n");
   for(u = uproc; u < &uproc[nprocs]; u++){
-    printf("%d\t%s\t%d", u->pid, u->name, u->ppid);
+    printf("%d\t%s\t%d\t%d", u->pid, u->name, u->cputime, u->ppid);
     printf("\n");
   }
 
