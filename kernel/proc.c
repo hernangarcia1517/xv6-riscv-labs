@@ -119,6 +119,7 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->cputime = 0;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -661,6 +662,7 @@ struct uproc {
     uint64 size;               // Size of process memory (bytes)
     int ppid;                  // Parent ID
     char name[16];             // Process command name
+    uint cputime;
 };
 	
 int
@@ -684,6 +686,7 @@ procinfo(uint64 addr)
       for(int i = 0; i < 16; i++){
         u.name[i] = p->name[i];
       }
+      u.cputime = p->cputime;
       copyout(callingproc->pagetable, addr, (char *)&u, sizeof(struct uproc));
       count++;
       addr += sizeof(struct uproc); // size of struct uproc
