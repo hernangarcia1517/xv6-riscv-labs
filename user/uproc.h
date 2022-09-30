@@ -8,3 +8,7 @@ struct uproc {
 	char name[16]; // process command name
 	uint cputime;
 };
+
+struct rusage {
+  uint cputime;
+};
