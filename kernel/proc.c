@@ -438,6 +438,7 @@ wait2(uint64 addr, uint64 rusage)
   struct proc *np;
   int havekids, pid;
   struct proc *p = myproc();
+  struct rusage r;
 
   acquire(&wait_lock);
 
@@ -452,6 +453,10 @@ wait2(uint64 addr, uint64 rusage)
         havekids = 1;
         if(np->state == ZOMBIE){
           // Found one.
+
+	  r.cputime = np->cputime;
+	  copyout(p->pagetable, rusage, (char*)&r, sizeof(r));
+	
           pid = np->pid;
           if(addr != 0 && copyout(p->pagetable, addr, (char *)&np->xstate,
                                   sizeof(np->xstate)) < 0) {
