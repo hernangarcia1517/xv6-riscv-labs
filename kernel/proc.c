@@ -124,6 +124,11 @@ found:
   p->state = USED;
   p->cputime = 0;
 
+  p->priority = HIGH;
+  p->timeslice = TSTICKSHIGH;
+  p->yielded = 0;
+  p->next = 0;
+
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
     freeproc(p);
