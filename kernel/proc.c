@@ -12,6 +12,9 @@ struct proc proc[NPROC];
 
 struct proc *initproc;
 
+struct queue queue[NQUEUE];
+int sched_policy = MLFQ; // Should be set to RR or MLFQ
+
 int nextpid = 1;
 struct spinlock pid_lock;
 
@@ -749,4 +752,177 @@ procinfo(uint64 addr)
     }
   }
   return count;
+}
+
+////////////////////////////////////////////////
+
+//queue stuff
+
+// Initializes scheduler queues
+
+// Call from main() after call to procinit()
+
+void
+queueinit(void)
+{
+  struct queue *q;
+  int i = 0;
+  for (q = queue; q < &queue[NQUEUE]; q++) {
+    initlock(&q->lock, "queue");
+    if (i == 0)
+      q->timeslice = TSTICKSHIGH;
+    else if (i == 1)
+      q->timeslice = TSTICKSMEDIUM;
+    else
+      q->timeslice = TSTICKSLOW;
+    q->head = 0;
+    q->tail = 0;
+    i++;
+  }
+}
+
+int
+timeslice(int priority)
+{
+  if (priority == HIGH)
+    return(TSTICKSHIGH);
+  else if (priority == MEDIUM)
+    return(TSTICKSMEDIUM);
+  else
+    return(TSTICKSLOW);
+}
+
+// queue[priority].lock is held on entry
+
+/* Uncomment to use for debugging
+
+static void
+
+queueprint(int priority)
+
+{
+
+struct proc *p;
+
+p = queue[priority].head;
+
+while (p) {
+
+printf("%d -> ", p->pid);
+
+p = p->next;
+
+}
+
+printf("0\n");
+
+return;
+
+}
+
+*/
+
+int
+queue_empty(int priority)
+{
+  if (!queue[priority].head)
+    return(1);
+  
+  return(0);
+}
+
+// Enqueues process p at the tail of the scheduler queue with priority == priority
+// p->lock should be held on entry
+
+static int
+enqueue_at_tail(struct proc *p, int priority)
+{
+  acquire(&queue[priority].lock);
+  if ((queue[priority].head == 0) && (queue[priority].tail == 0)) {
+    queue[priority].head = p;
+    queue[priority].tail = p;
+    release(&queue[priority].lock);
+    return(0);
+  }
+
+  if (queue[priority].tail == 0) {
+    release(&queue[priority].lock);
+    return(-1);
+  }
+
+  queue[priority].tail->next = p;
+  queue[priority].tail = p;
+  release(&queue[priority].lock);
+  
+  return(0);
+}
+
+// Enqueues process p at the head of the scheduler queue with priority == priority
+
+// p->lock should be held on entry except for initial enqueue of init
+
+static int
+enqueue_at_head(struct proc *p, int priority)
+{
+
+  //printf("entered enqueue_at_head, pid = %d\n", p->pid);
+  acquire(&queue[priority].lock);
+  if ((queue[priority].head == 0) && (queue[priority].tail == 0)) {
+    queue[priority].head = p;
+    queue[priority].tail = p;
+    release(&queue[priority].lock);
+    
+    return(0);
+  }
+
+  if (queue[priority].head == 0) {
+    release(&queue[priority].lock);
+    
+    return(-1);
+  }
+
+  p->next = queue[priority].head;
+  queue[priority].head = p;
+  release(&queue[priority].lock);
+
+  return(0);
+}
+
+// Dequeues and returns process at head of queue with priority == priority, or
+
+// returns 0 in the case of an empty queue
+
+static struct proc*
+dequeue(int priority)
+{
+
+  struct proc *p;
+  acquire(&queue[priority].lock);
+  
+  if ((queue[priority].head == 0) && (queue[priority].tail == 0)) {
+    release(&queue[priority].lock);
+    
+    return(0);
+  }
+
+  if (queue[priority].head == 0) {
+    printf("head of queue is null but tail is not null\n");
+    release(&queue[priority].lock);
+
+    return(0);
+  }
+
+  p = queue[priority].head;
+  acquire(&p->lock);
+  queue[priority].head = p->next;
+  p->next = 0;
+  release(&p->lock);
+
+  if (!queue[priority].head)
+    queue[priority].tail = 0;
+
+  release(&queue[priority].lock);
+
+  return(p);
+
 }
