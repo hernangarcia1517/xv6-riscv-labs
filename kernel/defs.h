@@ -108,6 +108,11 @@ void            procdump(void);
 int		procinfo(uint64 addr);
 int		wait2(uint64 p1, uint64 p2);
 
+// task4 part2
+void            queueinit(void);
+int             timeslice(int);
+int             queue_empty(int);
+
 // swtch.S
 void            swtch(struct context*, struct context*);
 
