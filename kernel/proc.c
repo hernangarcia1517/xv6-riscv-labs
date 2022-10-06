@@ -21,6 +21,13 @@ struct spinlock pid_lock;
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
+// things for queues lab2
+int timeslice(int priority);
+int queue_empty(int priority);
+static int enqueue_at_tail(struct proc *p, int priority);
+static int enqueue_at_head(struct proc *p, int priority);
+//static struct proc* dequeue(int priority);
+
 extern char trampoline[]; // trampoline.S
 
 // helps ensure that wakeups of wait()ing
@@ -253,6 +260,8 @@ userinit(void)
 
   p->state = RUNNABLE;
 
+  enqueue_at_tail(p, p->priority);
+
   release(&p->lock);
 }
 
@@ -322,6 +331,9 @@ fork(void)
 
   acquire(&np->lock);
   np->state = RUNNABLE;
+
+  enqueue_at_head(p, p->priority);
+
   release(&np->lock);
 
   return pid;
@@ -507,26 +519,30 @@ scheduler(void)
   
   c->proc = 0;
   for(;;){
-    // Avoid deadlock by ensuring that devices can interrupt.
-    intr_on();
+    //if(sched_policy == RR){
+      // Avoid deadlock by ensuring that devices can interrupt.
+      intr_on();
 
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        p->tsticks = 0;
-	swtch(&c->context, &p->context);
+      for(p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
+        if(p->state == RUNNABLE) {
+          // Switch to chosen process.  It is the process's job
+          // to release its lock and then reacquire it
+          // before jumping back to us.
+          p->state = RUNNING;
+          c->proc = p;
+          p->tsticks = 0;
+	  swtch(&c->context, &p->context);
 
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+          c->proc = 0;
+        }
+        release(&p->lock);
       }
-      release(&p->lock);
-    }
+    //}else{
+      //dequeue(HIGH);
+    //}
   }
 }
 
@@ -564,6 +580,9 @@ yield(void)
   struct proc *p = myproc();
   acquire(&p->lock);
   p->state = RUNNABLE;
+
+  enqueue_at_tail(p, p->priority);
+  
   sched();
   release(&p->lock);
 }
@@ -632,6 +651,7 @@ wakeup(void *chan)
       acquire(&p->lock);
       if(p->state == SLEEPING && p->chan == chan) {
         p->state = RUNNABLE;
+        enqueue_at_tail(p, p->priority);
       }
       release(&p->lock);
     }
@@ -653,6 +673,7 @@ kill(int pid)
       if(p->state == SLEEPING){
         // Wake process from sleep().
         p->state = RUNNABLE;
+	enqueue_at_tail(p, p->priority);
       }
       release(&p->lock);
       return 0;
@@ -897,7 +918,7 @@ enqueue_at_head(struct proc *p, int priority)
 // Dequeues and returns process at head of queue with priority == priority, or
 
 // returns 0 in the case of an empty queue
-
+/*
 static struct proc*
 dequeue(int priority)
 {
@@ -931,4 +952,4 @@ dequeue(int priority)
 
   return(p);
 
-}
+}*/
