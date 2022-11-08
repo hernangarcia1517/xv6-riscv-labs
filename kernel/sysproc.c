@@ -103,3 +103,9 @@ sys_getprocs(uint64 addr)
     return -1;
   return procinfo(addr);
 }
+
+uint64
+sys_freepmem(void)
+{
+    return kfreepagecount();
+}
