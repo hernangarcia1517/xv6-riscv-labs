@@ -1,6 +1,7 @@
 struct stat;
 struct rtcdate;
 struct uproc;
+struct sem;
 
 // system calls
 int fork(void);
@@ -28,6 +29,10 @@ int getprocs(struct uproc*);
 int freepmem(void);
 void *mmap(void*, uint64, int,int,int,int);
 int munmap(void*, int);
+int sem_init(sem_t*,  int, uint);
+int sem_destroy(sem_t*);
+int sem_wait(sem_t*);
+int sem_post(sem_t*);
 
 // ulib.c
 int stat(const char*, struct stat*);
