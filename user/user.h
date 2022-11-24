@@ -29,10 +29,10 @@ int getprocs(struct uproc*);
 int freepmem(void);
 void *mmap(void*, uint64, int,int,int,int);
 int munmap(void*, int);
-int sem_init(sem_t*,  int, uint);
-int sem_destroy(sem_t*);
-int sem_wait(sem_t*);
-int sem_post(sem_t*);
+int sem_init(sem_t sem, int pshared, int value);
+int sem_destroy(sem_t sem);
+int sem_wait(sem_t sem);
+int sem_post(sem_t sem);
 
 // ulib.c
 int stat(const char*, struct stat*);
